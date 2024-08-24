@@ -25,6 +25,20 @@ const createBoard = ({ players: { player1, player2 } }) => {
   return board;
 }
 
+const copyBoard = (oldBoard) => {
+  const board = [];
+
+  for (let rowIdx = 0; rowIdx < BOARD_SIZE; rowIdx++) {
+    const row = [];
+    for (let cellIdx = 0; cellIdx < BOARD_SIZE; cellIdx++) {
+      row[cellIdx] = oldBoard[rowIdx][cellIdx];
+    }
+    board[rowIdx] = row;
+  }
+
+  return board
+}
+
 const isInvalidTurn = ({ board }, { rowIdx, cellIdx }) => {
   const invalidConditions = [
     board[rowIdx][cellIdx]
@@ -44,17 +58,19 @@ const areAllCoinsUsed = (board) => {
 }
 
 const computeCoinsToChange = (coin, nextSameCoint, { x, y }) => {
-  let numberOfCoins = 0
-  if (x > 0 && y > 0) {
-    numberOfCoins = Math.max(coin[0] - 1 + nextSameCoint.rowIdx, coin[1] - 1 + nextSameCoint.cellIdx)
-  } else {
-    numberOfCoins = Math.max(nextSameCoint.rowIdx - 1 - coin[0], nextSameCoint.cellIdx - 1 - coin[1])
+  const points = [];
+  let currentCoint = coin;
+  const targetCoin = nextSameCoint
+
+  while (currentCoint[0] > -1 && currentCoint[1] > -1 && currentCoint[0] < 8 && currentCoint[1] < 8) {
+    if (currentCoint[0] === targetCoin[0] && currentCoint[1] === targetCoin[1]) {
+      break
+    }
+    points.push(currentCoint);
+    currentCoint = [currentCoint[0] + x, currentCoint[1] + y];
   }
 
-  return Array.from({ length: numberOfCoins }).reduce((coins, _) => {
-    const lastCoin = coins[coins.length - 1];
-    return [...coins, [lastCoin[0] + x, lastCoin[1] + y]];
-  }, [[coin[0] + x, coin[1] + y]])
+  return points.slice(1)
 }
 
 const highEndCond = ([rowIdx, cellIdx]) => {
@@ -65,35 +81,38 @@ const lowEndCond = ([rowIdx, cellIdx]) => {
   return rowIdx < 0 || cellIdx < 0
 }
 
-const updateCoins = (board, coin, { x, y }, symbol) => {
-  if (highEndCond([coin[0] + x, coin[1] + y])) return board;
-  if (lowEndCond([coin[0] + x, coin[1] + y])) return board;
+const updateCoins = (newBoard, coin, { x, y }, symbol) => {
+  if (highEndCond([coin[0] + x, coin[1] + y])) return newBoard;
+  if (lowEndCond([coin[0] + x, coin[1] + y])) return newBoard;
 
   let nextSameCoin = undefined
   let currentSearchPlace = [coin[0] + x, coin[1] + y];
 
 
   while (!highEndCond(currentSearchPlace) && !lowEndCond(currentSearchPlace)) {
-    if (board[currentSearchPlace[0]][currentSearchPlace[1]] === symbol) {
+    if (newBoard[currentSearchPlace[0]][currentSearchPlace[1]] === symbol) {
       if (currentSearchPlace[0] - x === coin[0] && currentSearchPlace[1] - y === coin[1]) { break; }
-      nextSameCoin = { rowIdx: currentSearchPlace[0], cellIdx: currentSearchPlace[1] };
+      nextSameCoin = [currentSearchPlace[0], currentSearchPlace[1]];
       break;
     }
-    if (board[currentSearchPlace[0]][currentSearchPlace[1]] === undefined) break;
+    if (newBoard[currentSearchPlace[0]][currentSearchPlace[1]] === undefined) break;
     currentSearchPlace = [currentSearchPlace[0] + x, currentSearchPlace[1] + y]
   }
 
-  if (nextSameCoin === undefined) return board;
+  if (nextSameCoin === undefined) return newBoard;
 
-  computeCoinsToChange(coin, nextSameCoin, { x, y }).forEach(coin1 => {
-    board[coin1[0]][coin1[1]] = symbol;
+  const coinsToChange = computeCoinsToChange(coin, nextSameCoin, { x, y })
+
+  coinsToChange.forEach(coin1 => {
+    newBoard[coin1[0]][coin1[1]] = symbol;
   })
 
-  return board;
+  return newBoard;
 }
 
 const placeCoin = ({ board, player: { symbol } }, coin) => {
-  board[coin[0]][coin[1]] = symbol;
+  const newBoard = copyBoard(board);
+  newBoard[coin[0]][coin[1]] = symbol;
   return [
     { x: 0, y: 1 },
     { x: 1, y: 0 },
@@ -105,7 +124,7 @@ const placeCoin = ({ board, player: { symbol } }, coin) => {
     { x: 1, y: -1 },
   ].reduce((acc, movement) => {
     return updateCoins(acc, coin, movement, symbol)
-  }, board)
+  }, newBoard)
 }
 
 const findWinner = ({ board }, players) => {
