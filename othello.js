@@ -39,7 +39,7 @@ const copyBoard = (oldBoard) => {
   return board
 }
 
-const isInvalidTurn = ({ board }, { rowIdx, cellIdx }) => {
+const isInvalidTurn = ({ board }, [rowIdx, cellIdx]) => {
   const invalidConditions = [
     board[rowIdx][cellIdx]
   ];
