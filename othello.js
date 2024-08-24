@@ -159,5 +159,3 @@ const findWinner = ({ board }, players) => {
   if (player1CoinCount === player2CoinCount) return [player1, player2];
   return player1CoinCount > player2CoinCount ? [player1] : [player2];
 }
-
-module.exports = { createBoard, isInvalidTurn, areAllCoinsUsed, placeCoin, findWinner }
