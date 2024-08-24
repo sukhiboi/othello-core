@@ -8,6 +8,7 @@ const createBoard = ({ players: { player1, player2 } }) => {
     for (let cellIdx = 0; cellIdx < BOARD_SIZE; cellIdx++) {
       row[cellIdx] = undefined;
     }
+
     board[rowIdx] = row;
   }
 
